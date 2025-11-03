@@ -8,7 +8,7 @@ export default function CalorieSummary({
 	onLogout,
 }: CalorieSummaryProps) {
 	// Default daily goal (can be customized later)
-	const dailyGoal = 1750
+	const dailyGoal = 1650
 
 	const percentage = Math.min((calories / dailyGoal) * 100, 100)
 

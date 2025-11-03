@@ -140,15 +140,27 @@ export default function Home() {
 		setDeleteConfirm({ isOpen: false, foodId: null, foodName: '' })
 	}
 
-	const todayFoods = foods.filter((food) => {
+	// Helper function to check if a timestamp is from today (user's local timezone)
+	const isToday = (timestamp: number): boolean => {
 		const today = new Date()
-		const foodDate = new Date(food.timestamp)
-		return (
-			foodDate.getDate() === today.getDate() &&
-			foodDate.getMonth() === today.getMonth() &&
-			foodDate.getFullYear() === today.getFullYear()
+		const foodDate = new Date(timestamp)
+
+		// Compare dates in user's local timezone
+		const todayStart = new Date(
+			today.getFullYear(),
+			today.getMonth(),
+			today.getDate()
 		)
-	})
+		const foodDateStart = new Date(
+			foodDate.getFullYear(),
+			foodDate.getMonth(),
+			foodDate.getDate()
+		)
+
+		return foodDateStart.getTime() === todayStart.getTime()
+	}
+
+	const todayFoods = foods.filter((food) => isToday(food.timestamp))
 
 	const todayCalories = todayFoods.reduce(
 		(sum, food) => sum + food.calories,
