@@ -61,7 +61,22 @@ export default function Home() {
 	if (loading) {
 		return (
 			<div className='min-h-screen flex items-center justify-center'>
-				<div className='text-[#1c1c1c]'>Loading...</div>
+				<div className='flex flex-col items-center gap-4'>
+					<div className='relative w-16 h-16'>
+						<div
+							className='w-16 h-16 rounded-full border-4 border-transparent animate-spin'
+							style={{
+								borderTopColor: '#ffd6c0',
+								borderRightColor: '#ebd4ef',
+								borderBottomColor: '#cfe4f8',
+								borderLeftColor: '#ffd6c0',
+							}}
+						></div>
+					</div>
+					<p className='text-[#1c1c1c] text-sm font-medium animate-pulse'>
+						Loading...
+					</p>
+				</div>
 			</div>
 		)
 	}
@@ -272,6 +287,7 @@ export default function Home() {
 							const dailyGoal = 1650
 							const dayPercentage =
 								(dayCalories / dailyGoal) * 100
+							const isWithinGoal = dayCalories <= dailyGoal
 
 							return (
 								<div key={dateKey}>
@@ -282,8 +298,17 @@ export default function Home() {
 										</h2>
 										<div className='flex items-center gap-2 text-xs font-medium text-[#1c1c1c] opacity-70'>
 											<span>
-												{dayCalories} cal (
-												{dayPercentage.toFixed(0)}%)
+												<span
+													className={
+														isWithinGoal
+															? 'text-green-600'
+															: 'text-red-600'
+													}
+												>
+													{dayCalories}
+												</span>{' '}
+												cal ({dayPercentage.toFixed(0)}
+												%)
 											</span>
 											<span>•</span>
 											<span>
@@ -357,7 +382,7 @@ export default function Home() {
 			{/* Floating Action Button */}
 			<button
 				onClick={() => setIsModalOpen(true)}
-				className='fixed bottom-8 left-1/2 transform -translate-x-1/2 text-black rounded-full px-10 py-3 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 opacity-80'
+				className='fixed bottom-10 left-1/2 transform -translate-x-1/2 text-black rounded-full px-12 py-3 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 opacity-90'
 				style={{
 					background:
 						'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',

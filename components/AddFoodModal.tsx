@@ -114,8 +114,7 @@ export default function AddFoodModal({
 						Describe Your Meal
 					</label>
 					<div className='flex'>
-						<input
-							type='text'
+						<textarea
 							id='meal'
 							value={mealDescription}
 							onChange={(e) => setMealDescription(e.target.value)}
