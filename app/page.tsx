@@ -263,6 +263,10 @@ export default function Home() {
 								(sum, food) => sum + food.calories,
 								0
 							)
+							const dayProtein = dayFoods.reduce(
+								(sum, food) => sum + food.protein,
+								0
+							)
 
 							// Calculate percentage of daily goal (same as CalorieSummary)
 							const dailyGoal = 1650
@@ -271,15 +275,21 @@ export default function Home() {
 
 							return (
 								<div key={dateKey}>
-									{/* Date Header with Total Calories */}
+									{/* Date Header with Total Calories and Protein */}
 									<div className='mb-3 flex items-center justify-between px-3'>
 										<h2 className='text-md font-semibold text-[#1c1c1c]'>
 											{formatDateHeader(dateKey)}
 										</h2>
-										<span className='text-sm font-medium text-[#1c1c1c] opacity-70'>
-											{dayCalories} cal (
-											{dayPercentage.toFixed(0)}%)
-										</span>
+										<div className='flex items-center gap-2 text-xs font-medium text-[#1c1c1c] opacity-70'>
+											<span>
+												{dayCalories} cal (
+												{dayPercentage.toFixed(0)}%)
+											</span>
+											<span>•</span>
+											<span>
+												{dayProtein.toFixed(1)}g p
+											</span>
+										</div>
 									</div>
 
 									{/* Food Entries for this day */}

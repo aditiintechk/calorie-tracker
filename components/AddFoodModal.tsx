@@ -120,7 +120,7 @@ export default function AddFoodModal({
 							value={mealDescription}
 							onChange={(e) => setMealDescription(e.target.value)}
 							placeholder='4 Idlis & 100g Coconut Chutney'
-							className='w-[80%] px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400'
+							className='w-[80%] px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400 placeholder:text-sm'
 							required
 							autoFocus
 							disabled={isCalculating}
@@ -173,8 +173,7 @@ export default function AddFoodModal({
 						{breakdown.length > 0 ? (
 							<div>
 								<div className='text-xs font-medium text-[#1c1c1c] mb-2'>
-									Here's the approximate nutrition breakdown
-									👇
+									Approximate Nutrition Breakdown
 								</div>
 								<div className='overflow-x-auto'>
 									<table className='w-full text-xs'>
@@ -268,7 +267,7 @@ export default function AddFoodModal({
 								onChange={(e) => setCalories(e.target.value)}
 								placeholder='Enter calories'
 								min='1'
-								className='w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400'
+								className='w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400 placeholder:text-sm'
 								required
 								disabled={isCalculating}
 							/>
@@ -288,7 +287,7 @@ export default function AddFoodModal({
 								placeholder='Enter protein'
 								min='0'
 								step='0.1'
-								className='w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400'
+								className='w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400 placeholder:text-sm'
 								required
 								disabled={isCalculating}
 							/>
