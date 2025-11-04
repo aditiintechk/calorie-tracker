@@ -160,8 +160,72 @@ export default function Home() {
 		return foodDateStart.getTime() === todayStart.getTime()
 	}
 
-	const todayFoods = foods.filter((food) => isToday(food.timestamp))
+	// Helper function to get date key for grouping (YYYY-MM-DD format in user's timezone)
+	const getDateKey = (timestamp: number): string => {
+		const date = new Date(timestamp)
+		const year = date.getFullYear()
+		const month = String(date.getMonth() + 1).padStart(2, '0')
+		const day = String(date.getDate()).padStart(2, '0')
+		return `${year}-${month}-${day}`
+	}
 
+	// Helper function to format date for display
+	const formatDateHeader = (dateKey: string): string => {
+		const [year, month, day] = dateKey.split('-')
+		const date = new Date(
+			parseInt(year),
+			parseInt(month) - 1,
+			parseInt(day)
+		)
+		const today = new Date()
+		const yesterday = new Date(today)
+		yesterday.setDate(yesterday.getDate() - 1)
+
+		const dateStart = new Date(
+			date.getFullYear(),
+			date.getMonth(),
+			date.getDate()
+		)
+		const todayStart = new Date(
+			today.getFullYear(),
+			today.getMonth(),
+			today.getDate()
+		)
+		const yesterdayStart = new Date(
+			yesterday.getFullYear(),
+			yesterday.getMonth(),
+			yesterday.getDate()
+		)
+
+		if (dateStart.getTime() === todayStart.getTime()) {
+			return 'Today'
+		} else if (dateStart.getTime() === yesterdayStart.getTime()) {
+			return 'Yesterday'
+		} else {
+			return date.toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric',
+			})
+		}
+	}
+
+	// Group foods by date
+	const foodsByDate = foods.reduce((acc, food) => {
+		const dateKey = getDateKey(food.timestamp)
+		if (!acc[dateKey]) {
+			acc[dateKey] = []
+		}
+		acc[dateKey].push(food)
+		return acc
+	}, {} as Record<string, Food[]>)
+
+	// Sort date keys in descending order (newest first)
+	const sortedDateKeys = Object.keys(foodsByDate).sort((a, b) =>
+		b.localeCompare(a)
+	)
+
+	const todayFoods = foods.filter((food) => isToday(food.timestamp))
 	const todayCalories = todayFoods.reduce(
 		(sum, food) => sum + food.calories,
 		0
@@ -189,14 +253,55 @@ export default function Home() {
 						/>
 					)}
 
-					<div className='space-y-3'>
-						{todayFoods.map((food) => (
-							<FoodEntry
-								key={food.id}
-								food={food}
-								onClick={() => handleEntryClick(food)}
-							/>
-						))}
+					<div className='space-y-6'>
+						{sortedDateKeys.map((dateKey, index) => {
+							// Sort foods within each day by timestamp (newest first)
+							const dayFoods = [...foodsByDate[dateKey]].sort(
+								(a, b) => b.timestamp - a.timestamp
+							)
+							const dayCalories = dayFoods.reduce(
+								(sum, food) => sum + food.calories,
+								0
+							)
+
+							// Calculate percentage of daily goal (same as CalorieSummary)
+							const dailyGoal = 1650
+							const dayPercentage =
+								(dayCalories / dailyGoal) * 100
+
+							return (
+								<div key={dateKey}>
+									{/* Date Header with Total Calories */}
+									<div className='mb-3 flex items-center justify-between px-3'>
+										<h2 className='text-md font-semibold text-[#1c1c1c]'>
+											{formatDateHeader(dateKey)}
+										</h2>
+										<span className='text-sm font-medium text-[#1c1c1c] opacity-70'>
+											{dayCalories} cal (
+											{dayPercentage.toFixed(0)}%)
+										</span>
+									</div>
+
+									{/* Food Entries for this day */}
+									<div className='space-y-3'>
+										{dayFoods.map((food) => (
+											<FoodEntry
+												key={food.id}
+												food={food}
+												onClick={() =>
+													handleEntryClick(food)
+												}
+											/>
+										))}
+									</div>
+
+									{/* Horizontal Line Separator (not after last day) */}
+									{index < sortedDateKeys.length - 1 && (
+										<hr className='mt-6 border-t border-2' />
+									)}
+								</div>
+							)
+						})}
 					</div>
 				</div>
 			</div>
