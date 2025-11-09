@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/AuthContext'
+import PageTransition from '@/components/PageTransition'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -61,7 +62,9 @@ export default function RootLayout({
 				<meta name='application-name' content='Calorie Tracker' />
 			</head>
 			<body className={`${inter.className} min-h-screen`}>
-				<AuthProvider>{children}</AuthProvider>
+				<AuthProvider>
+					<PageTransition>{children}</PageTransition>
+				</AuthProvider>
 			</body>
 		</html>
 	)

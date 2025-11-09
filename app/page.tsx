@@ -259,6 +259,17 @@ export default function Home() {
 					onLogout={handleLogout}
 				/>
 
+				<button
+					onClick={() => router.push('/weekly-insights')}
+					className='mt-4 w-full text-black rounded-xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center font-medium'
+					style={{
+						background:
+							'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+					}}
+				>
+					Weekly Insights
+				</button>
+
 				<div className='mt-8'>
 					{isModalOpen && (
 						<AddFoodModal
