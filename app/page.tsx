@@ -20,15 +20,7 @@ export default function Home() {
 	const router = useRouter()
 	const [foods, setFoods] = useState<Food[]>([])
 	const [isModalOpen, setIsModalOpen] = useState(false)
-	const [deleteConfirm, setDeleteConfirm] = useState<{
-		isOpen: boolean
-		foodId: string | null
-		foodName: string
-	}>({
-		isOpen: false,
-		foodId: null,
-		foodName: '',
-	})
+	const [editFood, setEditFood] = useState<Food | null>(null)
 
 	// Redirect to login if not authenticated
 	useEffect(() => {
@@ -113,46 +105,62 @@ export default function Home() {
 	}
 
 	const handleEntryClick = (food: Food) => {
-		setDeleteConfirm({
-			isOpen: true,
-			foodId: food.id,
-			foodName: food.name,
-		})
+		setEditFood(food)
+		setIsModalOpen(true)
 	}
 
-	const confirmDelete = async () => {
-		if (deleteConfirm.foodId) {
-			try {
-				const response = await fetch(
-					`/api/foods/${deleteConfirm.foodId}`,
-					{
-						method: 'DELETE',
-					}
-				)
+	const updateFood = async (
+		id: string,
+		name: string,
+		calories: number,
+		protein: number
+	) => {
+		try {
+			const response = await fetch(`/api/foods/${id}`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ name, calories, protein }),
+			})
 
-				if (response.ok) {
-					setFoods(
-						foods.filter((food) => food.id !== deleteConfirm.foodId)
-					)
-					setDeleteConfirm({
-						isOpen: false,
-						foodId: null,
-						foodName: '',
-					})
-				} else {
-					const error = await response.json()
-					console.error('Failed to delete food:', error.error)
-					alert('Failed to delete food entry. Please try again.')
-				}
-			} catch (error) {
-				console.error('Error deleting food:', error)
-				alert('Failed to delete food entry. Please try again.')
+			if (response.ok) {
+				const updatedFood = await response.json()
+				setFoods(
+					foods.map((food) => (food.id === id ? updatedFood : food))
+				)
+				setIsModalOpen(false)
+				setEditFood(null)
+			} else {
+				const error = await response.json()
+				console.error('Failed to update food:', error.error)
+				alert('Failed to update food entry. Please try again.')
 			}
+		} catch (error) {
+			console.error('Error updating food:', error)
+			alert('Failed to update food entry. Please try again.')
 		}
 	}
 
-	const cancelDelete = () => {
-		setDeleteConfirm({ isOpen: false, foodId: null, foodName: '' })
+	const deleteFood = async (id: string) => {
+		try {
+			const response = await fetch(`/api/foods/${id}`, {
+				method: 'DELETE',
+			})
+
+			if (response.ok) {
+				setFoods(foods.filter((food) => food.id !== id))
+				setIsModalOpen(false)
+				setEditFood(null)
+			} else {
+				const error = await response.json()
+				console.error('Failed to delete food:', error.error)
+				alert('Failed to delete food entry. Please try again.')
+			}
+		} catch (error) {
+			console.error('Error deleting food:', error)
+			alert('Failed to delete food entry. Please try again.')
+		}
 	}
 
 	// Helper function to check if a timestamp is from today (user's local timezone)
@@ -259,23 +267,42 @@ export default function Home() {
 					onLogout={handleLogout}
 				/>
 
-				<button
-					onClick={() => router.push('/weekly-insights')}
-					className='mt-4 w-full text-black rounded-xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center font-medium'
-					style={{
-						background:
-							'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
-					}}
-				>
-					Weekly Insights
-				</button>
+				{/* Buttons Row */}
+				<div className='mt-4 flex gap-2 text-[13px]'>
+					<button
+						onClick={() => router.push('/weekly-insights')}
+						className='flex-1 text-black rounded-lg px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center font-medium'
+						style={{
+							background:
+								'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+						}}
+					>
+						Weekly Insights
+					</button>
+					<button
+						onClick={() => setIsModalOpen(true)}
+						className='flex-1 text-black rounded-lg px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center font-medium'
+						style={{
+							background:
+								'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+						}}
+					>
+						Add Meal
+					</button>
+				</div>
 
 				<div className='mt-8'>
 					{isModalOpen && (
 						<AddFoodModal
 							isOpen={isModalOpen}
-							onClose={() => setIsModalOpen(false)}
+							onClose={() => {
+								setIsModalOpen(false)
+								setEditFood(null)
+							}}
 							onAdd={addFood}
+							onUpdate={updateFood}
+							onDelete={deleteFood}
+							editFood={editFood}
 						/>
 					)}
 
@@ -351,57 +378,6 @@ export default function Home() {
 					</div>
 				</div>
 			</div>
-
-			{/* Delete Confirmation Modal */}
-			{deleteConfirm.isOpen && (
-				<div
-					className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'
-					onClick={cancelDelete}
-				>
-					<div
-						className='bg-white rounded-xl shadow-2xl w-full max-w-sm p-6'
-						onClick={(e) => e.stopPropagation()}
-					>
-						<h3 className='text-lg font-bold text-[#1c1c1c] mb-2'>
-							Delete Entry?
-						</h3>
-						<p className='text-sm text-[#1c1c1c] mb-4'>
-							Are you sure you want to delete{' '}
-							<span className='font-semibold'>
-								"{deleteConfirm.foodName}"
-							</span>
-							? This action cannot be undone.
-						</p>
-						<div className='flex gap-3'>
-							<button
-								onClick={cancelDelete}
-								className='flex-1 px-4 py-2 border border-gray-300 rounded-lg text-[#1c1c1c] hover:bg-gray-50 font-medium transition-colors'
-							>
-								Cancel
-							</button>
-							<button
-								onClick={confirmDelete}
-								className='flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors'
-							>
-								Delete
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Floating Action Button */}
-			<button
-				onClick={() => setIsModalOpen(true)}
-				className='fixed bottom-10 left-1/2 transform -translate-x-1/2 text-black rounded-full px-12 py-3 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 opacity-90'
-				style={{
-					background:
-						'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
-				}}
-				aria-label='Add Meal'
-			>
-				<span className='text-sm font-medium'>Add Meal</span>
-			</button>
 		</main>
 	)
 }

@@ -138,8 +138,7 @@ export default function WeeklyInsights() {
 	// Check if selected week is current week
 	const today = new Date()
 	const currentWeekStart = getWeekStart(today)
-	const isCurrentWeek =
-		weekStart.getTime() === currentWeekStart.getTime()
+	const isCurrentWeek = weekStart.getTime() === currentWeekStart.getTime()
 
 	// Filter foods for the current week
 	const weekFoods = foods.filter((food) => {
@@ -220,10 +219,7 @@ export default function WeeklyInsights() {
 		(sum, food) => sum + food.calories,
 		0
 	)
-	const weeklyProtein = weekFoods.reduce(
-		(sum, food) => sum + food.protein,
-		0
-	)
+	const weeklyProtein = weekFoods.reduce((sum, food) => sum + food.protein, 0)
 	const dailyGoal = 1650
 	const weeklyGoal = dailyGoal * 7
 
@@ -237,10 +233,7 @@ export default function WeeklyInsights() {
 			(sum, food) => sum + food.calories,
 			0
 		)
-		const dayProtein = dayFoods.reduce(
-			(sum, food) => sum + food.protein,
-			0
-		)
+		const dayProtein = dayFoods.reduce((sum, food) => sum + food.protein, 0)
 		const overGoal = dayCalories - dailyGoal
 		const isOverGoal = dayCalories > dailyGoal
 
@@ -259,12 +252,54 @@ export default function WeeklyInsights() {
 
 	// Calculate insights
 	const daysOverGoal = overGoalDays.length
-	const daysUnderGoal = dailyStats.filter((day) => !day.isOverGoal && day.dayCalories > 0).length
+	const daysUnderGoal = dailyStats.filter(
+		(day) => !day.isOverGoal && day.dayCalories > 0
+	).length
 
 	// Get the day with highest calories
 	const highestDay = dailyStats.reduce((max, day) =>
 		day.dayCalories > max.dayCalories ? day : max
 	)
+
+	// Helper function to extract tags from food name
+	const extractTags = (name: string): string[] => {
+		const tagMatches = name.match(/\[([^\]]+)\]/g)
+		if (tagMatches) {
+			return tagMatches.map((tag) => tag.slice(1, -1).toLowerCase())
+		}
+		return []
+	}
+
+	// Find days with specific tags (junk, sugar, etc.)
+	const getDaysWithTag = (tagName: string) => {
+		const daysWithTag: Array<{
+			dateKey: string
+			formattedDate: string
+			foods: Food[]
+		}> = []
+
+		weekDays.forEach((dateKey) => {
+			const dayFoods = foodsByDate[dateKey] || []
+			const foodsWithTag = dayFoods.filter((food) => {
+				const tags = extractTags(food.name)
+				return tags.includes(tagName.toLowerCase())
+			})
+
+			if (foodsWithTag.length > 0) {
+				daysWithTag.push({
+					dateKey,
+					formattedDate: formatDateHeader(dateKey),
+					foods: foodsWithTag,
+				})
+			}
+		})
+
+		return daysWithTag
+	}
+
+	const junkDays = getDaysWithTag('junk')
+	const sugarDays = getDaysWithTag('sugar')
+	const fastingDays = getDaysWithTag('fasting')
 
 	return (
 		<main className='min-h-screen pb-20'>
@@ -307,7 +342,14 @@ export default function WeeklyInsights() {
 							strokeLinecap='round'
 							strokeLinejoin='round'
 						>
-							<rect x='3' y='4' width='18' height='18' rx='2' ry='2' />
+							<rect
+								x='3'
+								y='4'
+								width='18'
+								height='18'
+								rx='2'
+								ry='2'
+							/>
 							<line x1='16' y1='2' x2='16' y2='6' />
 							<line x1='8' y1='2' x2='8' y2='6' />
 							<line x1='3' y1='10' x2='21' y2='10' />
@@ -450,7 +492,10 @@ export default function WeeklyInsights() {
 						<div className='space-y-4'>
 							{overGoalDays.map((day) => {
 								const excess = day.overGoal
-								const percentage = ((day.dayCalories / dailyGoal) * 100).toFixed(0)
+								const percentage = (
+									(day.dayCalories / dailyGoal) *
+									100
+								).toFixed(0)
 
 								return (
 									<div
@@ -466,7 +511,8 @@ export default function WeeklyInsights() {
 											</span>
 										</div>
 										<div className='text-sm text-[#1c1c1c] opacity-70'>
-											{day.dayCalories} calories ({percentage}% of goal)
+											{day.dayCalories} calories (
+											{percentage}% of goal)
 										</div>
 										<div className='text-xs text-[#1c1c1c] opacity-60 mt-1'>
 											{day.dayProtein.toFixed(1)}g protein
@@ -474,6 +520,161 @@ export default function WeeklyInsights() {
 									</div>
 								)
 							})}
+						</div>
+					</div>
+				)}
+
+				{/* Tag-based Insights */}
+				{(junkDays.length > 0 ||
+					sugarDays.length > 0 ||
+					fastingDays.length > 0) && (
+					<div className='bg-white rounded-xl p-5 shadow-sm mb-6 mt-6'>
+						<h2 className='text-lg font-semibold text-[#1c1c1c] mb-4'>
+							Tag Insights
+						</h2>
+						<div className='space-y-6'>
+							{/* Junk Food Days */}
+							{junkDays.length > 0 && (
+								<div>
+									<div className='flex items-center gap-2 mb-3'>
+										<span
+											className='px-3 py-1 text-xs font-medium text-black rounded-full'
+											style={{
+												background:
+													'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+											}}
+										>
+											junk
+										</span>
+										<span className='text-sm font-medium text-[#1c1c1c]'>
+											{junkDays.length} day
+											{junkDays.length !== 1 ? 's' : ''}
+										</span>
+									</div>
+									<div className='space-y-2'>
+										{junkDays.map((day) => (
+											<div
+												key={day.dateKey}
+												className='border-l-2 border-orange-400 pl-3 py-1.5'
+											>
+												<div className='text-sm font-medium text-[#1c1c1c] mb-1'>
+													{day.formattedDate}
+												</div>
+												<div className='text-xs text-[#1c1c1c] opacity-70'>
+													{day.foods
+														.map((food) => {
+															const cleanName =
+																food.name
+																	.replace(
+																		/\[([^\]]+)\]/g,
+																		''
+																	)
+																	.trim()
+															return cleanName
+														})
+														.join(', ')}
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+
+							{/* Sugar Days */}
+							{sugarDays.length > 0 && (
+								<div>
+									<div className='flex items-center gap-2 mb-3'>
+										<span
+											className='px-3 py-1 text-xs font-medium text-black rounded-full'
+											style={{
+												background:
+													'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+											}}
+										>
+											sugar
+										</span>
+										<span className='text-sm font-medium text-[#1c1c1c]'>
+											{sugarDays.length} day
+											{sugarDays.length !== 1 ? 's' : ''}
+										</span>
+									</div>
+									<div className='space-y-2'>
+										{sugarDays.map((day) => (
+											<div
+												key={day.dateKey}
+												className='border-l-2 border-pink-400 pl-3 py-1.5'
+											>
+												<div className='text-sm font-medium text-[#1c1c1c] mb-1'>
+													{day.formattedDate}
+												</div>
+												<div className='text-xs text-[#1c1c1c] opacity-70'>
+													{day.foods
+														.map((food) => {
+															const cleanName =
+																food.name
+																	.replace(
+																		/\[([^\]]+)\]/g,
+																		''
+																	)
+																	.trim()
+															return cleanName
+														})
+														.join(', ')}
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+
+							{/* Fasting Days */}
+							{fastingDays.length > 0 && (
+								<div>
+									<div className='flex items-center gap-2 mb-3'>
+										<span
+											className='px-3 py-1 text-xs font-medium text-black rounded-full'
+											style={{
+												background:
+													'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+											}}
+										>
+											fasting
+										</span>
+										<span className='text-sm font-medium text-[#1c1c1c]'>
+											{fastingDays.length} day
+											{fastingDays.length !== 1
+												? 's'
+												: ''}
+										</span>
+									</div>
+									<div className='space-y-2'>
+										{fastingDays.map((day) => (
+											<div
+												key={day.dateKey}
+												className='border-l-2 border-blue-400 pl-3 py-1.5'
+											>
+												<div className='text-sm font-medium text-[#1c1c1c] mb-1'>
+													{day.formattedDate}
+												</div>
+												<div className='text-xs text-[#1c1c1c] opacity-70'>
+													{day.foods
+														.map((food) => {
+															const cleanName =
+																food.name
+																	.replace(
+																		/\[([^\]]+)\]/g,
+																		''
+																	)
+																	.trim()
+															return cleanName
+														})
+														.join(', ')}
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 				)}
@@ -490,4 +691,3 @@ export default function WeeklyInsights() {
 		</main>
 	)
 }
-

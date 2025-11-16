@@ -6,16 +6,44 @@ interface AddFoodModalProps {
 	isOpen: boolean
 	onClose: () => void
 	onAdd: (name: string, calories: number, protein: number) => void
+	onUpdate?: (
+		id: string,
+		name: string,
+		calories: number,
+		protein: number
+	) => void
+	onDelete?: (id: string) => void
+	editFood?: {
+		id: string
+		name: string
+		calories: number
+		protein: number
+	} | null
 }
+
+const AVAILABLE_TAGS = [
+	'breakfast',
+	'lunch',
+	'snack',
+	'dinner',
+	'junk',
+	'fasting',
+	'sugar',
+	'post-workout',
+]
 
 export default function AddFoodModal({
 	isOpen,
 	onClose,
 	onAdd,
+	onUpdate,
+	onDelete,
+	editFood,
 }: AddFoodModalProps) {
-	const [mealDescription, setMealDescription] = useState('')
+	const [foodInputs, setFoodInputs] = useState<string[]>([''])
 	const [calories, setCalories] = useState('')
 	const [protein, setProtein] = useState('')
+	const [selectedTags, setSelectedTags] = useState<string[]>([])
 	const [isCalculating, setIsCalculating] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [calculatedCalories, setCalculatedCalories] = useState<number | null>(
@@ -33,23 +61,74 @@ export default function AddFoodModal({
 		}>
 	>([])
 
+	const isEditMode = !!editFood
+
 	useEffect(() => {
 		if (isOpen) {
-			setMealDescription('')
-			setCalories('')
-			setProtein('')
+			if (editFood) {
+				// Extract tags from name if they exist (tags are in brackets)
+				const tagMatches = editFood.name.match(/\[([^\]]+)\]/g)
+				let tags: string[] = []
+				if (tagMatches) {
+					tags = tagMatches.map((tag) =>
+						tag.slice(1, -1).toLowerCase()
+					)
+					setSelectedTags(
+						tags.filter((tag) => AVAILABLE_TAGS.includes(tag))
+					)
+				} else {
+					setSelectedTags([])
+				}
+
+				// Remove tags from name and parse into inputs (split by &)
+				const nameWithoutTags = editFood.name
+					.replace(/\[([^\]]+)\]/g, '')
+					.trim()
+				const foodItems = nameWithoutTags
+					.split(' & ')
+					.filter((item) => item.trim())
+				setFoodInputs(foodItems.length > 0 ? foodItems : [''])
+				setCalories(editFood.calories.toString())
+				setProtein(editFood.protein.toString())
+			} else {
+				setFoodInputs([''])
+				setCalories('')
+				setProtein('')
+				setSelectedTags([])
+			}
 			setError(null)
 			setCalculatedCalories(null)
 			setCalculatedProtein(null)
 			setBreakdown([])
 		}
-	}, [isOpen])
+	}, [isOpen, editFood])
+
+	const addFoodInput = () => {
+		setFoodInputs([...foodInputs, ''])
+	}
+
+	const removeFoodInput = (index: number) => {
+		if (foodInputs.length > 1) {
+			setFoodInputs(foodInputs.filter((_, i) => i !== index))
+		}
+	}
+
+	const updateFoodInput = (index: number, value: string) => {
+		const newInputs = [...foodInputs]
+		newInputs[index] = value
+		setFoodInputs(newInputs)
+	}
 
 	const calculateCalories = async () => {
-		if (!mealDescription.trim()) {
-			setError('Please enter a meal description')
+		// Filter out empty inputs and concatenate
+		const nonEmptyInputs = foodInputs.filter((input) => input.trim())
+		if (nonEmptyInputs.length === 0) {
+			setError('Please enter at least one food item')
 			return
 		}
+
+		// Concatenate all food inputs (without tags for calculation)
+		const concatenatedDescription = nonEmptyInputs.join(' & ')
 
 		setIsCalculating(true)
 		setError(null)
@@ -64,7 +143,7 @@ export default function AddFoodModal({
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					mealDescription: mealDescription.trim(),
+					mealDescription: concatenatedDescription,
 				}),
 			})
 
@@ -92,12 +171,43 @@ export default function AddFoodModal({
 		}
 	}
 
+	const toggleTag = (tag: string) => {
+		if (selectedTags.includes(tag)) {
+			setSelectedTags(selectedTags.filter((t) => t !== tag))
+		} else {
+			setSelectedTags([...selectedTags, tag])
+		}
+	}
+
+	const formatFoodName = (items: string[], tags: string[]): string => {
+		const foodName = items.filter((item) => item.trim()).join(' & ')
+		if (tags.length > 0) {
+			const tagString = tags.map((tag) => `[${tag}]`).join(' ')
+			return `${foodName} ${tagString}`
+		}
+		return foodName
+	}
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 		const caloriesNum = parseInt(calories)
 		const proteinNum = parseFloat(protein) || 0
-		if (mealDescription.trim() && caloriesNum > 0) {
-			onAdd(mealDescription.trim(), caloriesNum, proteinNum)
+		const nonEmptyInputs = foodInputs.filter((input) => input.trim())
+		if (nonEmptyInputs.length > 0 && caloriesNum > 0) {
+			const formattedName = formatFoodName(nonEmptyInputs, selectedTags)
+			if (isEditMode && editFood && onUpdate) {
+				onUpdate(editFood.id, formattedName, caloriesNum, proteinNum)
+			} else {
+				onAdd(formattedName, caloriesNum, proteinNum)
+			}
+		}
+	}
+
+	const handleDelete = () => {
+		if (isEditMode && editFood && onDelete) {
+			if (confirm('Are you sure you want to delete this entry?')) {
+				onDelete(editFood.id)
+			}
 		}
 	}
 
@@ -107,57 +217,164 @@ export default function AddFoodModal({
 		<div className='rounded-lg p-4 mb-4 shadow-xl'>
 			<form onSubmit={handleSubmit}>
 				<div className='mb-3'>
-					<label
-						htmlFor='meal'
-						className='block text-xs font-medium text-[#1c1c1c] mb-1.5'
-					>
-						Describe Your Meal
+					<label className='block text-xs font-medium text-[#1c1c1c] mb-1.5'>
+						Food Items
 					</label>
-					<div className='flex'>
-						<textarea
-							id='meal'
-							value={mealDescription}
-							onChange={(e) => setMealDescription(e.target.value)}
-							placeholder='4 Idlis & 100g Coconut Chutney'
-							className='w-[80%] px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400 placeholder:text-sm'
-							required
-							autoFocus
-							disabled={isCalculating}
-							autoComplete='off'
-						/>
-						<button
-							type='button'
-							onClick={calculateCalories}
-							disabled={isCalculating || !mealDescription.trim()}
-							className='w-[18%] ml-auto px-3 py-2 text-sm bg-slate-700 hover:bg-slate-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2'
-						>
-							{isCalculating ? (
-								<>
-									<svg
-										className='animate-spin h-4 w-4 text-white'
-										xmlns='http://www.w3.org/2000/svg'
-										fill='none'
-										viewBox='0 0 24 24'
+					<div className='space-y-2'>
+						{foodInputs.map((input, index) => (
+							<div
+								key={index}
+								className='flex gap-2 items-center'
+							>
+								<input
+									type='text'
+									value={input}
+									onChange={(e) =>
+										updateFoodInput(index, e.target.value)
+									}
+									placeholder={
+										index === 0
+											? 'e.g., 4 Idlis'
+											: 'e.g., 100g Coconut Chutney'
+									}
+									className='flex-1 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-transparent outline-none text-[#1c1c1c] placeholder:text-gray-400 placeholder:text-sm'
+									autoFocus={
+										index === 0 && foodInputs.length === 1
+									}
+									disabled={isCalculating}
+									autoComplete='off'
+								/>
+								{foodInputs.length > 1 && (
+									<button
+										type='button'
+										onClick={() => removeFoodInput(index)}
+										disabled={isCalculating}
+										className='p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50'
+										aria-label='Remove food item'
 									>
-										<circle
-											className='opacity-25'
-											cx='12'
-											cy='12'
-											r='10'
+										<svg
+											xmlns='http://www.w3.org/2000/svg'
+											width='18'
+											height='18'
+											viewBox='0 0 24 24'
+											fill='none'
 											stroke='currentColor'
-											strokeWidth='4'
-										></circle>
-										<path
-											className='opacity-75'
-											fill='currentColor'
-											d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-										></path>
-									</svg>
-								</>
-							) : (
-								<>🔥</>
-							)}
-						</button>
+											strokeWidth='2'
+											strokeLinecap='round'
+											strokeLinejoin='round'
+										>
+											<line
+												x1='18'
+												y1='6'
+												x2='6'
+												y2='18'
+											/>
+											<line
+												x1='6'
+												y1='6'
+												x2='18'
+												y2='18'
+											/>
+										</svg>
+									</button>
+								)}
+							</div>
+						))}
+					</div>
+					<button
+						type='button'
+						onClick={addFoodInput}
+						disabled={isCalculating}
+						className='mt-2 text-sm text-[#1c1c1c] hover:text-gray-600 font-medium flex items-center gap-1 disabled:opacity-50'
+					>
+						<svg
+							xmlns='http://www.w3.org/2000/svg'
+							width='16'
+							height='16'
+							viewBox='0 0 24 24'
+							fill='none'
+							stroke='currentColor'
+							strokeWidth='2'
+							strokeLinecap='round'
+							strokeLinejoin='round'
+						>
+							<line x1='12' y1='5' x2='12' y2='19' />
+							<line x1='5' y1='12' x2='19' y2='12' />
+						</svg>
+						Add another food item
+					</button>
+				</div>
+
+				{/* Calculate Button */}
+				<div className='mb-3'>
+					<button
+						type='button'
+						onClick={calculateCalories}
+						disabled={
+							isCalculating ||
+							foodInputs.every((input) => !input.trim())
+						}
+						className='w-full px-4 py-2.5 text-sm bg-slate-700 hover:bg-slate-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2'
+					>
+						{isCalculating ? (
+							<>
+								<svg
+									className='animate-spin h-4 w-4 text-white'
+									xmlns='http://www.w3.org/2000/svg'
+									fill='none'
+									viewBox='0 0 24 24'
+								>
+									<circle
+										className='opacity-25'
+										cx='12'
+										cy='12'
+										r='10'
+										stroke='currentColor'
+										strokeWidth='4'
+									></circle>
+									<path
+										className='opacity-75'
+										fill='currentColor'
+										d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+									></path>
+								</svg>
+								Calculating...
+							</>
+						) : (
+							<>🔥 Calculate Calories</>
+						)}
+					</button>
+				</div>
+
+				{/* Tags Section */}
+				<div className='mb-3'>
+					<label className='block text-xs font-medium text-[#1c1c1c] mb-2'>
+						Tags
+					</label>
+					<div className='flex flex-wrap gap-2'>
+						{AVAILABLE_TAGS.map((tag) => (
+							<button
+								key={tag}
+								type='button'
+								onClick={() => toggleTag(tag)}
+								disabled={isCalculating}
+								className={`px-5 py-2 text-xs font-medium rounded-xl transition-all ${
+									selectedTags.includes(tag)
+										? 'text-black'
+										: 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+								} disabled:opacity-50`}
+								style={
+									selectedTags.includes(tag)
+										? {
+												background:
+													'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+										  }
+										: {}
+								}
+							>
+								{tag}
+							</button>
+						))}
 					</div>
 				</div>
 
@@ -315,8 +532,18 @@ export default function AddFoodModal({
 						}
 						className='flex-1 px-3 py-2 text-sm bg-slate-700 hover:bg-slate-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors'
 					>
-						Add
+						{isEditMode ? 'Update' : 'Add'}
 					</button>
+					{isEditMode && onDelete && (
+						<button
+							type='button'
+							onClick={handleDelete}
+							className='px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors'
+							disabled={isCalculating}
+						>
+							Delete
+						</button>
+					)}
 				</div>
 			</form>
 		</div>
