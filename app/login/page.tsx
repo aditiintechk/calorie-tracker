@@ -10,6 +10,11 @@ export default function LoginPage() {
 	const [password, setPassword] = useState('')
 	const [error, setError] = useState('')
 	const [loading, setLoading] = useState(false)
+	const [showResetPassword, setShowResetPassword] = useState(false)
+	const [resetUsername, setResetUsername] = useState('')
+	const [newPassword, setNewPassword] = useState('')
+	const [resetLoading, setResetLoading] = useState(false)
+	const [resetSuccess, setResetSuccess] = useState(false)
 	const { user, loading: authLoading, login, register } = useAuth()
 	const router = useRouter()
 
@@ -138,6 +143,21 @@ export default function LoginPage() {
 						</button>
 					</form>
 
+					{isLogin && (
+						<div className='mt-4 text-center'>
+							<button
+								type='button'
+								onClick={() => {
+									setShowResetPassword(true)
+									setError('')
+								}}
+								className='text-sm text-[#1c1c1c] opacity-70 hover:opacity-100 transition-opacity underline'
+							>
+								Forgot Password?
+							</button>
+						</div>
+					)}
+
 					<div className='mt-6 text-center'>
 						<button
 							onClick={() => {
@@ -145,6 +165,7 @@ export default function LoginPage() {
 								setError('')
 								setUsername('')
 								setPassword('')
+								setShowResetPassword(false)
 							}}
 							className='text-sm text-[#1c1c1c] opacity-70 hover:opacity-100 transition-opacity underline'
 						>
@@ -153,6 +174,148 @@ export default function LoginPage() {
 								: 'Already have an account? Login'}
 						</button>
 					</div>
+
+					{showResetPassword && (
+						<div className='mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50'>
+							<h3 className='text-sm font-semibold text-[#1c1c1c] mb-3'>
+								Reset Password
+							</h3>
+							{resetSuccess ? (
+								<div className='space-y-3'>
+									<p className='text-sm text-green-600'>
+										Password reset successfully! You can now login with your new password.
+									</p>
+									<button
+										type='button'
+										onClick={() => {
+											setShowResetPassword(false)
+											setResetSuccess(false)
+											setResetUsername('')
+											setNewPassword('')
+										}}
+										className='w-full py-2 text-sm rounded-lg font-medium transition-opacity text-[#1c1c1c]'
+										style={{
+											background:
+												'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+										}}
+									>
+										Close
+									</button>
+								</div>
+							) : (
+								<form
+									onSubmit={async (e) => {
+										e.preventDefault()
+										if (!resetUsername || !newPassword) {
+											setError('Please fill in all fields')
+											return
+										}
+										if (newPassword.length < 6) {
+											setError('Password must be at least 6 characters')
+											return
+										}
+
+										setResetLoading(true)
+										setError('')
+
+										try {
+											const response = await fetch(
+												'/api/auth/reset-password',
+												{
+													method: 'POST',
+													headers: {
+														'Content-Type': 'application/json',
+													},
+													body: JSON.stringify({
+														username: resetUsername,
+														newPassword,
+													}),
+												}
+											)
+
+											const data = await response.json()
+
+											if (response.ok) {
+												setResetSuccess(true)
+												setError('')
+											} else {
+												setError(data.error || 'Failed to reset password')
+											}
+										} catch (err) {
+											setError('Network error. Please try again.')
+										} finally {
+											setResetLoading(false)
+										}
+									}}
+									className='space-y-3'
+								>
+									<div>
+										<label
+											htmlFor='reset-username'
+											className='block text-xs font-medium text-[#1c1c1c] mb-1'
+										>
+											Username
+										</label>
+										<input
+											id='reset-username'
+											type='text'
+											value={resetUsername}
+											onChange={(e) =>
+												setResetUsername(e.target.value)
+											}
+											required
+											disabled={resetLoading}
+											className='w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffd6c0] text-[#1c1c1c] bg-white'
+											placeholder='Enter your username'
+										/>
+									</div>
+									<div>
+										<label
+											htmlFor='reset-password'
+											className='block text-xs font-medium text-[#1c1c1c] mb-1'
+										>
+											New Password
+										</label>
+										<input
+											id='reset-password'
+											type='password'
+											value={newPassword}
+											onChange={(e) => setNewPassword(e.target.value)}
+											required
+											minLength={6}
+											disabled={resetLoading}
+											className='w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ffd6c0] text-[#1c1c1c] bg-white'
+											placeholder='Enter new password (min 6 characters)'
+										/>
+									</div>
+									<button
+										type='submit'
+										disabled={resetLoading}
+										className='w-full py-2 text-sm rounded-lg font-medium transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-[#1c1c1c]'
+										style={{
+											background:
+												'linear-gradient(135deg, #ffd6c0 0%, #ebd4ef 50%, #cfe4f8 100%)',
+										}}
+									>
+										{resetLoading ? 'Resetting...' : 'Reset Password'}
+									</button>
+									<button
+										type='button'
+										onClick={() => {
+											setShowResetPassword(false)
+											setResetUsername('')
+											setNewPassword('')
+											setError('')
+										}}
+										className='w-full py-2 text-sm text-[#1c1c1c] opacity-70 hover:opacity-100 transition-opacity'
+										disabled={resetLoading}
+									>
+										Cancel
+									</button>
+								</form>
+							)}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

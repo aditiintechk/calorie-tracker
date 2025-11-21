@@ -35,7 +35,7 @@ export async function PATCH(
 			)
 		}
 
-		const { name, calories, protein } = await request.json()
+		const { name, calories, protein, timestamp } = await request.json()
 
 		if (!name || !calories || protein === undefined) {
 			return NextResponse.json(
@@ -48,6 +48,23 @@ export async function PATCH(
 		const db = client.db(DB_NAME)
 		const collection = db.collection(COLLECTION_NAME)
 
+		// Prepare update object
+		const updateData: {
+			name: string
+			calories: number
+			protein: number
+			datetime?: Date
+		} = {
+			name: name.trim(),
+			calories: parseInt(calories),
+			protein: parseFloat(protein),
+		}
+
+		// Update datetime if timestamp is provided
+		if (timestamp) {
+			updateData.datetime = new Date(timestamp)
+		}
+
 		// Only update if the food entry belongs to the authenticated user
 		const result = await collection.updateOne(
 			{
@@ -55,11 +72,7 @@ export async function PATCH(
 				userId: user.userId,
 			},
 			{
-				$set: {
-					name: name.trim(),
-					calories: parseInt(calories),
-					protein: parseFloat(protein),
-				},
+				$set: updateData,
 			}
 		)
 

@@ -79,14 +79,19 @@ export default function Home() {
 
 	const totalCalories = foods.reduce((sum, food) => sum + food.calories, 0)
 
-	const addFood = async (name: string, calories: number, protein: number) => {
+	const addFood = async (
+		name: string,
+		calories: number,
+		protein: number,
+		timestamp?: number
+	) => {
 		try {
 			const response = await fetch('/api/foods', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ name, calories, protein }),
+				body: JSON.stringify({ name, calories, protein, timestamp }),
 			})
 
 			if (response.ok) {
@@ -113,7 +118,8 @@ export default function Home() {
 		id: string,
 		name: string,
 		calories: number,
-		protein: number
+		protein: number,
+		timestamp?: number
 	) => {
 		try {
 			const response = await fetch(`/api/foods/${id}`, {
@@ -121,7 +127,7 @@ export default function Home() {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ name, calories, protein }),
+				body: JSON.stringify({ name, calories, protein, timestamp }),
 			})
 
 			if (response.ok) {

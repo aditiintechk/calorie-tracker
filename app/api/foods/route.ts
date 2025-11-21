@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 		}
 
-		const { name, calories, protein } = await request.json()
+		const { name, calories, protein, timestamp } = await request.json()
 
 		if (!name || !calories || protein === undefined) {
 			return NextResponse.json(
@@ -78,11 +78,14 @@ export async function POST(request: NextRequest) {
 		const db = client.db(DB_NAME)
 		const collection = db.collection(COLLECTION_NAME)
 
+		// Use provided timestamp or default to current time
+		const entryDate = timestamp ? new Date(timestamp) : new Date()
+
 		const foodEntry: FoodEntry = {
 			name: name.trim(),
 			calories: parseInt(calories),
 			protein: parseFloat(protein),
-			datetime: new Date(),
+			datetime: entryDate,
 			userId: user.userId,
 		}
 

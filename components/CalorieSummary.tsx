@@ -44,7 +44,7 @@ export default function CalorieSummary({
 				</button>
 			)}
 			<div className='flex justify-between items-start mb-4'>
-				<div>
+				<div className='flex-1'>
 					<p className='text-black/90 text-center text-md font-semibold'>
 						{calories} / {dailyGoal} calories
 					</p>
